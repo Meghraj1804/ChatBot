@@ -21,7 +21,7 @@ def get_conversion_factor(base_currency:str, target_currency:str):
     0.93
     """
 
-    url = f'https://v6.exchangerate-api.com/v6/23f01450a219a66d8de030bc/pair/{base_currency}/{target_currency}'
+    url = f'https://v6.exchangerate-api.com/v6/23f01450a219ad8de030bc/pair/{base_currency}/{target_currency}'
     response = requests.get(url)
 
     return response.json()
@@ -49,10 +49,9 @@ def get_stock_price(symbol: str) -> dict:
     }
     """
 
-    # url = f"https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol={symbol}&apikey=K0D9BAHNXOQ22SDF"
-    # r = requests.get(url)
-    # return r.json() 
-    return {"stock_proce":250.89}
+    url = f"https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol={symbol}&apikey=K0D9BAHNX22SDF"
+    r = requests.get(url)
+    return r.json() 
 
 @tool
 def calculator(first_num: float, second_num: float, operation: str) -> dict:
