@@ -55,6 +55,9 @@ def ai_only_stream(user_input, context=None, metadata=None):
         if metadata.get('langgraph_node') == 'remember_node':
             continue
 
+        if metadata.get('langgraph_node') == 'tools':
+            continue
+
         if isinstance(message_chunk, AIMessage) and message_chunk.content:
             full_response += message_chunk.content
             yield message_chunk.content

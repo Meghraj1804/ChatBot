@@ -1,6 +1,6 @@
 from langgraph.graph import StateGraph, START, END
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage, RemoveMessage
-from langgraph.prebuilt import ToolNode
+from langgraph.prebuilt import ToolNode, tools_condition
 from typing import Literal
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnableConfig
@@ -72,7 +72,7 @@ def decision_node(state : ChatState):
 
             decision_chain = decision_prompt | decision_model
 
-            output = decision_chain.invoke({'messages':message})
+            output = decision_chain.invoke({'messages':message.content})
 
             return {'decision':output.decision}
 
@@ -101,23 +101,6 @@ def tool_branch(state : ChatState):
 
     return {'messages':[output]}
 
-def final_answer_node(state: ChatState, config: RunnableConfig, *, store: BaseStore):
-    user_id = config["configurable"]["user_id"]
-    ns = ("user", user_id, "details")
-
-    items = store.search(ns)
-    user_details = "\n".join(it.value.get("data", "") for it in items) if items else ""
-
-    system_msg = SystemMessage(
-        content=chat_prompt_template.format(user_details_content=user_details or "(empty)")
-    )
-    messages = state['messages']
-
-    output = model.invoke([system_msg] + messages)
-    
-
-    return {"messages": [output]}
-
 tool_node = ToolNode(tools)
 
 # ------------------------------------------- 2.Conditional Nodes ----------------------------------------------------------------
@@ -142,16 +125,15 @@ graph.add_node('summarize_conversation',summarize_conversation)
 graph.add_node('decision_node',decision_node)
 graph.add_node('chat_branch',chat_branch)
 graph.add_node('tool_branch',tool_branch)
-graph.add_node('final_answer',final_answer_node)
 graph.add_node('tools',tool_node)
 
 graph.add_edge(START,'remember_node')
 graph.add_conditional_edges('remember_node',should_summarize,{True: "summarize_conversation",False: "decision_node",})
 graph.add_edge('summarize_conversation','decision_node')
 graph.add_conditional_edges('decision_node',check_decision,{'tool_branch':'tool_branch', 'chat_branch':'chat_branch'})
-graph.add_edge('tool_branch','tools')
-graph.add_edge('tools','final_answer')
-graph.add_edge("final_answer", END)
+graph.add_conditional_edges('tool_branch',tools_condition,{"tools": "tools", END: END})
+graph.add_edge('tools', 'tool_branch')  # After tools, back to agent for next decision
+
 graph.add_edge('chat_branch', END)
 
 
