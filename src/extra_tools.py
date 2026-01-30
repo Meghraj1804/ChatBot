@@ -49,9 +49,10 @@ def get_stock_price(symbol: str) -> dict:
     }
     """
 
-    url = f"https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol={symbol}&apikey=K0D9BAHNX22SDF"
-    r = requests.get(url)
-    return r.json() 
+    # url = f"https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol={symbol}&apikey=K0D9BAHNX22SDF"
+    # r = requests.get(url)
+    # return r.json() 
+    return{symbol:234.78}
 
 @tool
 def calculator(first_num: float, second_num: float, operation: str) -> dict:

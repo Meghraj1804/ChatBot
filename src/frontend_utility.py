@@ -28,13 +28,13 @@ def ai_only_stream(user_input, context=None, metadata=None):
     for message_chunk, metadata in chatbot.stream(
                                                 {'messages':[HumanMessage(content=user_input)]},
                                                 config = {
-                                                "configurable": {"thread_id": st.session_state["current_thread_id"]},
+                                                "configurable": {"thread_id": st.session_state["current_thread_id"],
+                                                                "user_id": st.session_state["user_id"]},
                                                 "metadata": {"thread_id": st.session_state["current_thread_id"]},
                                                 "run_name": "chat_turn",
                                                 },
                                                 stream_mode='messages'
                                                 ):
-
         if isinstance(message_chunk, ToolMessage):
             tool_name = getattr(message_chunk, "name", "tool")
 
@@ -51,6 +51,8 @@ def ai_only_stream(user_input, context=None, metadata=None):
                 )
 
         if metadata.get('langgraph_node') == 'decision_node':
+            continue
+        if metadata.get('langgraph_node') == 'remember_node':
             continue
 
         if isinstance(message_chunk, AIMessage) and message_chunk.content:

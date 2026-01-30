@@ -18,6 +18,9 @@ if 'ingested_docs' not in st.session_state:
 if 'thread_docs_history' not in st.session_state:
     st.session_state['thread_docs_history'] = {}
 
+if "user_id" not in st.session_state:
+    st.session_state["user_id"] = '18'
+
 current_thread_id = str(st.session_state['current_thread_id'])
 
 
@@ -30,15 +33,10 @@ for thread_id in st.session_state['thread_messages']:
         st.session_state['current_thread_id'] = thread_id
         messages = load_conversations()
         st.session_state['thread_docs_history'] = load_docs(current_thread_id)
-
-        # if current_thread_id in st.session_state['ingested_docs']:
-        #     ingested_docs = st.session_state.get('ingested_docs', {})
-        #     st.session_state['thread_docs_history'] = ingested_docs.get(current_thread_id)
             
         temp_msg = []
 
         for msg in messages:
-            # print('msg = ',type(msg.content))
             if msg.content == '' or "{" in msg.content and "}" in msg.content:
                 continue
             if isinstance(msg, HumanMessage):
