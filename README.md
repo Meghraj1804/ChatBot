@@ -1,31 +1,51 @@
 # LangGraph-Based Conversational Chatbot – Workflow Overview
 
-This project implements a state-driven conversational workflow using LangGraph, where each user interaction flows through a controlled sequence of decision-making, tool execution, and response generation. The chatbot maintains persistent conversation state and conditionally augments responses using tools and document context.
+This project implements a state-driven conversational chatbot using LangGraph, with explicit control over memory extraction, conversation summarization, decision-based tool usage, and final response generation.
+The system is designed to avoid uncontrolled agent loops and redundant LLM calls while maintaining persistent conversational state.
 
 ## Core Workflow Philosophy
 The chatbot does not operate as a free-form agent loop.
 Instead, it follows a deterministic execution graph where:
 
-- Every user input enters through a defined start state
-- Decisions are made explicitly
-- Tools are invoked only when required
-- The conversation exits through a defined end state
+- Deterministic execution using LangGraph
+- Explicit decision-making before tool invocation
+- Single final user-facing LLM response per turn
+- Isolated memory and summarization steps
+- Persistent, multi-turn conversation state
 
-This approach ensures predictable behavior, reduced cost, and debuggable execution.
+The chatbot follows a graph workflow, not a free-form agent loop.
 
 ## End-to-End Conversation Workflow
-### 1. User Input Initialization
-- A user submits a message via the Streamlit chat interface.
-- The message is wrapped as a HumanMessage.
-- The message is appended to the shared ChatState.
-- Each conversation is associated with a unique thread ID, enabling multi-session persistence.
+![Alt text](graph_structure.png)
 
-### 2. Entry Into LangGraph (START)
-- The updated ChatState is passed to the LangGraph workflow.
-- The workflow begins execution from the START node.
-- The state contains the full message history for the current thread.
+### 1. User Input & State Initialization
+- User submits a message via the Streamlit UI.
+- The message is appended to ChatState.messages as a HumanMessage.
+- Each conversation is associated with a persistent thread ID. 
 
-### 3. Decision Node (Intent & Tool Requirement)
+### 2. User Memory Extraction
+- Reads only the latest user message.
+- Uses a dedicated memory extraction prompt and model.
+- Extracts user-specific, long-term facts only.
+- Stores memory entries only if they are:
+    - Relevant
+    - Non-duplicative
+- Memory is stored externally and does not pollute the conversation state.
+
+### 3. Short Term Memory
+- Triggered when the message history exceeds a threshold.
+- Responsibilities:
+    - Maintain a rolling conversation summary.
+    - Remove older messages using RemoveMessage.
+    - Preserve:
+        - System-level summary
+        - Most recent turns verbatim
+- This step prevents:
+    - Context window overflow
+    - Latency growth
+    - Token cost explosion
+
+### 4. Tool Requirement Classification
 - A dedicated decision model analyzes the latest user message.
 - The model determines whether:
     - A direct LLM response is sufficient, or
@@ -34,15 +54,7 @@ This approach ensures predictable behavior, reduced cost, and debuggable executi
 - Outcome:
     - If no tools are needed → route to response generation
     - If tools are required → route to tool execution
-
-### 4. Conditional Tool Invocation
-This step enriches the conversation state with external data while keeping execution controlled.
-- When tools are required, execution flows to the Tool Node.
-- Tools are invoked using LangChain’s structured tool interface.
-- Available tools include:
-    - Web search
-    - Currency conversion
-- Tool results are returned as ToolMessage objects and appended to the ChatState.
+- This explicit gating prevents unnecessary tool calls.
 
 ### 5. Response Generation Node
 - The generation model receives:
@@ -52,15 +64,26 @@ This step enriches the conversation state with external data while keeping execu
 - The LLM generates a final response grounded in the updated state.
 - The response is appended as an AIMessage.
 
-### 6. Streaming Output to UI
-- The generated response is streamed incrementally back to the Streamlit UI.
-- This improves perceived responsiveness while maintaining backend determinism.
-- Only AI-generated content is streamed; state updates remain internal.
+### 6. Tool-Aware Response Path
+- This node handles both:
+    - Tool-aware LLM invocation
+    - Final response generation after tool execution
+- Flow
+    1. LLM is invoked with tool awareness.
+    2. If tools are required:
+        - Execution transitions to the tools node.
+    3. Tool outputs are appended as ToolMessages.
+    4. Control returns to tool_branch.
+    5. The final user-facing response is generated exactly once.
+- This design eliminates duplicate LLM calls and ensures:
+    - Lower latency
+    - Reduced cost
+    - Clear reasoning flow
 
-### 7. Exit From Graph (END)
-- Once response generation completes, execution transitions to the END node.
-- The final ChatState is checkpointed.
-- The conversation thread remains available for future continuation.
+### 7. External Tool Execution
+- Executes only the tools explicitly requested by the model.
+- Tool outputs are added to the conversation state.
+- No reasoning or response generation occurs here.
 
 ## Document-Aware Workflow (When PDFs Are Used)
 When documents are uploaded:
