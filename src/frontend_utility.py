@@ -8,11 +8,12 @@ def get_thread_id():
     return thread_id
 
 def reset_chat():
-    thread_id = get_thread_id()
+    thread_id = str(get_thread_id())
     st.session_state['current_thread_id'] = thread_id
     st.session_state['message_history'] = []
     if thread_id not in st.session_state['thread_messages']:
         st.session_state['thread_messages'].append(thread_id)
+    st.session_state['thread_docs_history'] = {thread_id: {'retriever': None, 'documents':[]}}
     return thread_id
 
 def load_conversations():
@@ -24,12 +25,13 @@ def load_conversations():
 def ai_only_stream(user_input, context=None, metadata=None):
     status_holder = {"box": None}
     full_response = ""    
-
+    
     for message_chunk, metadata in chatbot.stream(
                                                 {'messages':[HumanMessage(content=user_input)]},
                                                 config = {
                                                 "configurable": {"thread_id": st.session_state["current_thread_id"],
-                                                                "user_id": st.session_state["user_id"]},
+                                                                "user_id": st.session_state["user_id"],
+                                                                "docs":st.session_state['thread_docs_history']},
                                                 "metadata": {"thread_id": st.session_state["current_thread_id"]},
                                                 "run_name": "chat_turn",
                                                 },
@@ -53,6 +55,8 @@ def ai_only_stream(user_input, context=None, metadata=None):
         if metadata.get('langgraph_node') == 'decision_node':
             continue
         if metadata.get('langgraph_node') == 'remember_node':
+            continue
+        if metadata.get('langgraph_node') == 'summarize_conversation':
             continue
 
         if metadata.get('langgraph_node') == 'tools':

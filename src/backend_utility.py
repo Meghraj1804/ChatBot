@@ -1,4 +1,4 @@
-from src.config import checkpointer, vector_db_path, embd_model
+from src.config import checkpointer, vector_db_path, embd_model, ChatState
 import os
 import json
 from langchain_community.vectorstores import FAISS
@@ -20,70 +20,67 @@ def retrieve_thread_docs():
     return list(os.listdir(vector_db_path))
 
 
-def load_docs(thread_id:str):
-    thread_data = {}
+def load_docs(thread_id: str):
+    """
+    Load an existing FAISS vector store for a thread and return a retriever.
+    """
+    print(f'loading {thread_id} docs')
 
     thread_path = os.path.join(vector_db_path, thread_id)
-
+    
     if not os.path.exists(thread_path):
-        return thread_data  # Nothing to load
+        return {thread_id: {'retriever': None, 'documents':[]}}
 
+    try:
+        vector_store = FAISS.load_local(
+            thread_path,
+            embd_model,
+            allow_dangerous_deserialization=True
+        )
 
-    # Load FAISS vector store
-    vector_store = FAISS.load_local(
-        thread_path,
-        embd_model,
-        allow_dangerous_deserialization=True
-    )
+        retriever = vector_store.as_retriever(
+            search_type="mmr",
+            search_kwargs={"k": 3}
+        )
 
-    keys_path = os.path.join(thread_path, "doc_keys.json")
+        documents = [i.metadata['source'] for i in list(vector_store.docstore._dict.values())]
 
-    with open(keys_path, "r") as f:
-        doc_keys = json.load(f)
+        return {thread_id: {'retriever': retriever, 'documents':documents}}
 
-        # Convert to retriever
-        retriever = vector_store.as_retriever(search_kwargs={"k": k})
-
-        # Get all documents (for metadata access)
-        documents = [vector_store.docstore.search(key) for key in doc_keys]
-        thread_data[thread_id] = {
-            "retriever": retriever,
-            "documents": documents
-        }
-
-    return thread_data
+    except Exception as e:
+        pass
 
 
 def ingest_pdf(file_bytes: bytes, thread_id: str, filename: Optional[str] = None):
-
-    print(f'ingesting {filename}')
-
-    thread_db_path = os.path.join(vector_db_path, thread_id)
-    os.makedirs(thread_db_path, exist_ok=True)
-
-    # Load existing vector store if it exists
-    vector_store = None
-    keys_path = os.path.join(thread_db_path, "doc_keys.json")
-    if os.path.exists(thread_db_path):
-        try:
-            vector_store = FAISS.load_local(
-                thread_db_path,
-                embd_model,
-                allow_dangerous_deserialization=True
-            )
-        except Exception:
-            vector_store = None
-
-    # Load existing keys
-    existing_keys = []
-    if os.path.exists(keys_path):
-        with open(keys_path, "r") as f:
-            existing_keys = json.load(f)
+    """
+    Ingest a PDF into a thread-specific FAISS vector store and return a retriever.
+    """
 
     if not file_bytes:
         raise ValueError("No bytes received for ingestion.")
 
-    # Write PDF bytes to temp file
+    thread_path = os.path.join(vector_db_path, thread_id)
+    os.makedirs(thread_path, exist_ok=True)
+
+    vector_store = None
+    documents = []
+
+    # Try loading existing vector store
+    if os.path.exists(thread_path):
+        try:
+            vector_store = FAISS.load_local(
+                thread_path,
+                embd_model,
+                allow_dangerous_deserialization=True
+            )
+            documents = [
+                i.metadata.get("source")
+                for i in vector_store.docstore._dict.values()
+            ]
+        except Exception:
+            vector_store = None
+
+    # Write PDF to temp file
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_file:
         temp_file.write(file_bytes)
         temp_path = temp_file.name
@@ -92,80 +89,47 @@ def ingest_pdf(file_bytes: bytes, thread_id: str, filename: Optional[str] = None
         loader = PyPDFLoader(temp_path)
         docs = loader.load()
 
+        # Attach metadata
+        for d in docs:
+            d.metadata.update({
+                "thread_id": thread_id,
+                "source": filename,
+            })
+
         splitter = RecursiveCharacterTextSplitter(
             chunk_size=1000,
             chunk_overlap=200,
-            separators=["\n\n", "\n", " ", ""]
         )
         chunks = splitter.split_documents(docs)
 
-        # Add metadata and generate keys
-        new_keys = []
-        start_index = len(existing_keys)
-        for i, chunk in enumerate(chunks):
-            chunk.metadata.update({
-                "thread_id": thread_id,
-                "file_name": filename
-            })
-            key = f"{thread_id}_{start_index + i}"
-            chunk.metadata["key"] = key
-            new_keys.append(key)
-
-        # Add documents to vector store
+        # Create or update vector store
         if vector_store is None:
-            # No existing store, create new
             vector_store = FAISS.from_documents(chunks, embd_model)
         else:
-            # Add new documents to existing store
             vector_store.add_documents(chunks)
 
-        # Save updated vector store
-        vector_store.save_local(thread_db_path)
+        vector_store.save_local(thread_path)
 
-        # Update keys JSON
-        all_keys = existing_keys + new_keys
-        with open(keys_path, "w") as f:
-            json.dump(all_keys, f)
+        retriever = vector_store.as_retriever(
+            search_type="mmr",
+            search_kwargs={"k": 3}
+        )
 
-        # Create retriever
-        retriever = vector_store.as_retriever(search_kwargs={"k": 3})
+        # Refresh document list
+        documents = [
+            i.metadata.get("source")
+            for i in vector_store.docstore._dict.values()
+        ]
 
-        return {thread_id: {'retriever': retriever, 'documents': filename}}
+        return {
+            thread_id: {
+                "retriever": retriever,
+                "documents": documents
+            }
+        }
 
     finally:
         try:
             os.remove(temp_path)
         except OSError:
             pass
-
-def get_context(user_input, retriever):
-    result = retriever.invoke(user_input)
-    context = [doc.page_content for doc in result]
-    metadata = [doc.metadata for doc in result]
-
-    user_input = f'''
-                        You are a helpful assistant answering questions based on retrieved documents.
-
-                        Rules:
-                        - Use only the information in the context
-                        - Do not speculate or add external knowledge
-                        - If the answer is partial, say so clearly
-                        - If no answer exists, say you don’t know
-
-                        <context>
-                        {context}
-                        </context>
-
-                        User asks:
-                        {user_input}
-
-                        Metadata:
-                        {metadata}
-
-                        Answer in a clear, friendly, and professional tone.
-
-                        '''
-
-    return user_input
-
-    

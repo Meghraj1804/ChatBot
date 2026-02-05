@@ -18,34 +18,42 @@ memory_prompt = """You are responsible for updating and maintaining accurate use
 decision_prompt = ChatPromptTemplate.from_messages(
     [
         (
-            'system',
-            'You are a routing assistant. Current date: January 2026.\n\n'
-            'Analyze if the user query requires real-time data from external APIs.\n\n'
-            'Available APIs:\n'
-            '1. Currency conversion (exchange rates)\n'
-            '2. Stock prices (Alpha Vantage)\n'
-            '3. Calculator tool which will perform addition, subtraction, multiplication and division\n'
-            '4. DuckDuckGo search run (for real-time web search, news, facts, current events)\n\n'
-            'Respond with:\n'
-            '- "yes" if the query needs current exchange rates, stock prices, or real-time web search\n'
-            '- "no" for greetings, general questions, explanations, or historical info\n\n'
-            'Examples:\n'
-            '- "Hello" → no\n'
-            '- "What is inflation?" → no\n'
-            '- "Convert 100 USD to EUR" → yes\n'
-            '- "What is Apple stock price now?" → yes\n'
-            '- "Latest news about OpenAI" → yes\n'
+            "system",
+            "You are a routing assistant. Current date: January 2026.\n\n"
+            "Your task is to decide how the user query should be handled.\n\n"
+            "Available branches:\n"
+            "1. chat_branch → normal conversation, explanations, greetings, general knowledge\n"
+            "2. tool_branch → requires real-time data or external APIs\n"
+            "Available tools:\n"
+            "- Currency conversion (exchange rates)\n"
+            "- Stock prices (Alpha Vantage)\n"
+            "- Calculator (add, subtract, multiply, divide)\n"
+            "- DuckDuckGo web search (real-time search, news, current events)\n\n"
+            "STRICT DECISION RULES:\n"
+            "1. Use tool_branch ONLY if the query requires real-time data, "
+            "live facts, calculations, exchange rates, stock prices, or web search.\n"
+            "2. Use chat_branch ONLY if the query is greetings, small talk, "
+            "explanations, or general knowledge.\n\n"
+            "Respond with ONLY one of the following values:\n"
+            "- chat_branch\n"
+            "- tool_branch\n"
+            "Examples:\n"
+            "- \"Hello\" (no docs) → chat_branch\n"
+            "- \"What is inflation?\" (no docs) → chat_branch\n"
+            "- \"Convert 100 USD to EUR\" (no docs) → tool_branch\n"
+            "- \"Apple stock price today\" (no docs) → tool_branch\n"
+
         ),
         (
-            'user',
-            'you can use external api '
-            '1.Get the conversion factor (exchange rate) between two currencies. '
-            '2.Get the latest stock price for a given company symbol using Alpha Vantage API. '
-            '3.Search the web using DuckDuckGo search run. '
-            'Do you want to use those api to answer this message {messages}'
+            "user",
+            "User message:\n{messages}\n\n"
+            "Decide the correct branch strictly based on the rules above."
         ),
     ]
 )
+
+
+
 
 chat_prompt_template = """You are a helpful assistant with memory capabilities.
 If user-specific memory is available, use it to personalize 
@@ -72,3 +80,30 @@ In the end suggest 3 relevant further questions based on the current response an
 
 The user’s memory (which may be empty) is provided as: {user_details_content}
 """
+
+rag_prompt_template = """
+                        ### Instructions
+                        - Use **only** the information explicitly stated in the context.
+                        - Do **not** use prior knowledge, assumptions, or external sources.
+                        - If the context provides **partial information**, clearly state that the answer is incomplete.
+                        - If the answer **cannot be found** in the context, respond with:
+                        "I don't have enough information to answer that based on the provided documents."
+                        - Do not mention the word "context" or describe your internal reasoning.
+                        - Be concise, accurate, and helpful.
+
+                        ### Retrieved Information
+                        <context>
+                        {context}
+                        </context>
+
+                        ### User Question
+                        {user_input}
+
+                        ### Additional Metadata
+                        {metadata}
+
+                        ### Response Guidelines
+                        - Write in a clear, professional, and friendly tone.
+                        - Prefer direct answers over long explanations.
+                        - Use bullet points only when they improve clarity.
+                        """

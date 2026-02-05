@@ -13,13 +13,14 @@ import os
 
 
 class DecisionOutput(BaseModel):
-    decision : Literal["yes", "no"] = Field(description="make decision yes or no")
+    decision : Literal["tool_branch", "chat_branch", "rag_branch"] = Field(description="make decision tool_branch or chat_branch")
 
 class ChatState(TypedDict):
     messages : Annotated[list[BaseMessage], add_messages]
-    decision : Literal["yes", "no"]
-    tool_message : Annotated[list[BaseMessage], add_messages]
+    decision : Literal["chat_branch","tool_branch","rag_branch"]
     summary : str
+    context : list
+    metadata : list
 
 class MemoryItem(BaseModel):
     text: str = Field(description="Atomic user memory")
