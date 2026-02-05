@@ -81,17 +81,53 @@ In the end suggest 3 relevant further questions based on the current response an
 The user’s memory (which may be empty) is provided as: {user_details_content}
 """
 
-rag_prompt_template = """
-                        ### Instructions
-                        - Use **only** the information explicitly stated in the context.
-                        - Do **not** use prior knowledge, assumptions, or external sources.
-                        - If the context provides **partial information**, clearly state that the answer is incomplete.
-                        - If the answer **cannot be found** in the context, respond with:
-                        "I don't have enough information to answer that based on the provided documents."
-                        - Do not mention the word "context" or describe your internal reasoning.
-                        - Be concise, accurate, and helpful.
+# rag_prompt_template = """
+#                         ### Instructions
+#                         - Use **only** the information explicitly stated in the context.
+#                         - Do **not** use prior knowledge, assumptions, or external sources.
+#                         - If the context provides **partial information**, clearly state that the answer is incomplete.
+#                         - If the answer **cannot be found** in the context, respond with:
+#                         "I don't have enough information to answer that based on the provided documents."
+#                         - Do not mention the word "context" or describe your internal reasoning.
+#                         - Be concise, accurate, and helpful.
 
-                        ### Retrieved Information
+#                         ### Retrieved Information
+#                         <context>
+#                         {context}
+#                         </context>
+
+#                         ### User Question
+#                         {user_input}
+
+#                         ### Additional Metadata
+#                         {metadata}
+
+#                         ### Response Guidelines
+#                         - Write in a clear, professional, and friendly tone.
+#                         - Prefer direct answers over long explanations.
+#                         - Use bullet points only when they improve clarity.
+#                         """
+rag_prompt_template = ChatPromptTemplate.from_messages(
+    [
+        (
+            "system",
+            ''' Instructions
+                       - Use **only** the information explicitly stated in the context.
+                         - Do **not** use prior knowledge, assumptions, or external sources.
+                         - If the context provides **partial information**, clearly state that the answer is incomplete.
+                         - If the answer **cannot be found** in the context, respond with:
+                         "I don't have enough information to answer that based on the provided documents."
+                         - Do not mention the word "context" or describe your internal reasoning.
+                         - Be concise, accurate, and helpful.
+                Response Guidelines
+                        - Write in a clear, professional, and friendly tone.
+                        - Prefer direct answers over long explanations.
+                        - Use bullet points only when they improve clarity.
+            '''
+        ),
+        (
+            "user",
+            '''Retrieved Information
                         <context>
                         {context}
                         </context>
@@ -101,9 +137,7 @@ rag_prompt_template = """
 
                         ### Additional Metadata
                         {metadata}
-
-                        ### Response Guidelines
-                        - Write in a clear, professional, and friendly tone.
-                        - Prefer direct answers over long explanations.
-                        - Use bullet points only when they improve clarity.
-                        """
+            '''
+        ),
+    ]
+)

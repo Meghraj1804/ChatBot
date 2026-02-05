@@ -125,21 +125,26 @@ def rag_branch(state : ChatState, config: RunnableConfig, *, store: BaseStore):
     items = store.search(ns)
     user_details = "\n".join(it.value.get("data", "") for it in items) if items else ""
 
-    system_msg = SystemMessage(
-        content=chat_prompt_template.format(user_details_content=user_details or "(empty)")
-    )
+    # system_msg = SystemMessage(
+    #     content=chat_prompt_template.format(user_details_content=user_details or "(empty)")
+    # )
 
     context = state['context']
     metadata = state['metadata']
     messages = state['messages']
+    
 
-    human_msg = HumanMessage(
-        content=rag_prompt_template.format(context=context or "(empty)" , user_input=messages, metadata=metadata or "(empty)")
-    )
+    # human_msg = HumanMessage(
+    #     content=rag_prompt_template.format(context=context or "(empty)" , user_input=messages, metadata=metadata or "(empty)")
+    # )
 
-    output = model.invoke([system_msg] + [human_msg])
+    # print('human_msg = ',human_msg)
+    chain = rag_prompt_template | model
+    for message in reversed(messages):
+        if isinstance(message, HumanMessage):
+            output = chain.invoke({'context':context, 'user_input':message.content, 'metadata':metadata})
 
-    return {'messages':[output]}
+            return {'messages':[output]}
 
 
 # ------------------------------------------- 2.Conditional Nodes ----------------------------------------------------------------
