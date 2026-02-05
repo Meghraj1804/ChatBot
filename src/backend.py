@@ -7,8 +7,8 @@ from langchain_core.runnables import RunnableConfig
 from langgraph.store.base import BaseStore
 import uuid
 
-from src.propmpt_templates import memory_prompt, decision_prompt, chat_prompt_template, rag_prompt_template
-from src.config import ChatState, model, decision_model, model_with_tool, tools, checkpointer,  memory_extractor_model, memory_store
+from src.prompt_templates import memory_prompt, decision_prompt, chat_prompt_template, rag_prompt_template
+from src.config import ChatState, model, decision_model, model_with_tool, tools, checkpointer,  memory_extractor_model, memory_store, summarization_length
 
 
 
@@ -22,7 +22,7 @@ def remember_node(state: ChatState, config: RunnableConfig, *, store: BaseStore)
     existing = "\n".join(it.value.get("data", "") for it in items) if items else "(empty)"
 
     last_text = state["messages"][-1].content
-    print('remember_node = ',last_text)
+
 
     decision = memory_extractor_model.invoke(
                             [
@@ -30,7 +30,6 @@ def remember_node(state: ChatState, config: RunnableConfig, *, store: BaseStore)
                                 {"role": "user", "content": last_text},
                             ]
                             )
-    
     if decision.should_write:
         for mem in decision.memories:
             if mem.is_new and mem.text.strip():
@@ -53,10 +52,9 @@ def summarize_conversation(state: ChatState):
     messages_for_summary = state["messages"] + [
         HumanMessage(content=prompt)
     ]
-    print('summarize_conversation = ',messages_for_summary)
+
     response = model.invoke(messages_for_summary)
 
-    # Keep only last 2 messages verbatim
     messages_to_delete = state["messages"][:-2]
 
     return {
@@ -68,22 +66,19 @@ def summarize_conversation(state: ChatState):
 
 def decision_node(state : ChatState, config: RunnableConfig, *, store: BaseStore):
     messages = state['messages']
-    docs = config["configurable"]["docs"]    
-    if len(docs)>0:
-        # documents = docs[current_thread_id]['documents']
+    current_thread_id = str(config["configurable"]["thread_id"])
+    docs = config["configurable"]["docs"]
+    decision_chain = decision_prompt | decision_model
+    
+    if len(docs[current_thread_id]['documents'])>0:
+        
         return {'decision':'get_context'}
     else:
         for message in reversed(messages):
             if isinstance(message, HumanMessage):
-
-
-                decision_chain = decision_prompt | decision_model
-
-                print('decision_node = ',message.content)
                 
                 output = decision_chain.invoke({'messages':message.content})
-                print('decision = ',output.decision)
-
+                
                 return {'decision':output.decision}
 
 
@@ -113,7 +108,7 @@ def tool_branch(state : ChatState):
 tool_node = ToolNode(tools)
 
 def get_context(state : ChatState, config: RunnableConfig, *, store: BaseStore):
-    print('config = ',config)
+
     current_thread_id = str(config["configurable"]["thread_id"])
     retriever = config["configurable"]["docs"][current_thread_id]['retriever']
     messages = state['messages']
@@ -151,7 +146,6 @@ def rag_branch(state : ChatState, config: RunnableConfig, *, store: BaseStore):
 
 def check_decision(state : ChatState)->Literal["chat_branch","tool_branch","get_context"]:
     sentiment = state["decision"]
-    print('sentiment = ',sentiment)
     if sentiment == 'tool_branch':
         return 'tool_branch'
     elif sentiment == 'get_context':
@@ -160,7 +154,7 @@ def check_decision(state : ChatState)->Literal["chat_branch","tool_branch","get_
         return 'chat_branch'
 
 def should_summarize(state: ChatState):
-    return len(state["messages"]) > 6
+    return len(state["messages"]) > summarization_length
 
 # ------------------------------------------ 3.Defining Graph ---------------------------------------------
 
@@ -180,7 +174,7 @@ graph.add_conditional_edges('remember_node',should_summarize,{True: "summarize_c
 graph.add_edge('summarize_conversation','decision_node')
 graph.add_conditional_edges('decision_node',check_decision,{'tool_branch':'tool_branch', 'chat_branch':'chat_branch', 'get_context':'get_context'})
 graph.add_conditional_edges('tool_branch',tools_condition,{"tools": "tools", END: END})
-graph.add_edge('tools', 'tool_branch')  # After tools, back to agent for next decision
+graph.add_edge('tools', 'tool_branch')
 graph.add_edge('get_context','rag_branch')
 graph.add_edge('rag_branch',END)
 graph.add_edge('chat_branch', END)

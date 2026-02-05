@@ -1,6 +1,11 @@
 from langchain_community.tools import DuckDuckGoSearchRun, tool
 import requests
 import json
+# from src.config import STOCK_PRICE_API_KEY, EXCHANGE_RATE_API_KEY
+import os
+
+EXCHANGE_RATE_API_KEY = os.getenv("EXCHANGE_RATE_API_KEY")
+STOCK_PRICE_API_KEY = os.getenv("STOCK_PRICE_API_KEY")
 
 
 @tool
@@ -21,7 +26,7 @@ def get_conversion_factor(base_currency:str, target_currency:str):
     0.93
     """
 
-    url = f'https://v6.exchangerate-api.com/v6/23f01450a219ad8de030bc/pair/{base_currency}/{target_currency}'
+    url = f'https://v6.exchangerate-api.com/v6/{EXCHANGE_RATE_API_KEY}/pair/{base_currency}/{target_currency}'
     response = requests.get(url)
 
     return response.json()
@@ -49,10 +54,10 @@ def get_stock_price(symbol: str) -> dict:
     }
     """
 
-    # url = f"https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol={symbol}&apikey=K0D9BAHNX22SDF"
-    # r = requests.get(url)
-    # return r.json() 
-    return{symbol:234.78}
+    url = f"https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol={symbol}&apikey={STOCK_PRICE_API_KEY}"
+    r = requests.get(url)
+    return r.json() 
+    # return{symbol:234.78}
 
 @tool
 def calculator(first_num: float, second_num: float, operation: str) -> dict:

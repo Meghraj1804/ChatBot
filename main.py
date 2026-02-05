@@ -2,6 +2,8 @@ import streamlit as st
 from src.backend_utility import retrieve_all_threads, retrieve_thread_docs, ingest_pdf, load_docs
 from src.frontend_utility import reset_chat, load_conversations, ai_only_stream
 from langchain_core.messages import HumanMessage, AIMessage, ToolMessage, SystemMessage
+from src.exception import CustomException
+from src.logger import logging
 
 if 'message_history' not in st.session_state:
     st.session_state['message_history'] = []
@@ -44,16 +46,18 @@ for thread_id in st.session_state['thread_messages']:
                 role = 'assistant'
             temp_msg.append({'role':role, 'content':msg.content})
         st.session_state['message_history'] = temp_msg
+        logging.info(f"chatting thread {st.session_state['current_thread_id']}")
 
 for message in st.session_state['message_history']:
     with st.chat_message(message['role']):
         st.text(message['content'])
 
 uploaded_pdf = st.sidebar.file_uploader("Upload a PDF for this chat", type=["pdf"],key=f"pdf_uploader_{current_thread_id}")
-print('first st.session_state = ',st.session_state['thread_docs_history'])
+
 if uploaded_pdf:
     if uploaded_pdf.name in st.session_state['thread_docs_history'][current_thread_id]['documents']:
         st.sidebar.info(f"`{uploaded_pdf.name}` already processed for this chat.")
+        
     else:
         with st.sidebar.status("Indexing PDF…", expanded=True) as status_box:
             st.session_state['thread_docs_history'] = ingest_pdf(
@@ -61,8 +65,8 @@ if uploaded_pdf:
                 thread_id=current_thread_id,
                 filename=uploaded_pdf.name,
             )
-        
-print('final st.session_state = ',st.session_state['thread_docs_history'])
+        logging.info(f"documnent uploaded sucessfully")
+
 user_input = st.chat_input('Type here')
 if user_input:
 

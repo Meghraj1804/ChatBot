@@ -10,6 +10,12 @@ from langgraph.store.base import BaseStore
 import sqlite3
 from langgraph.checkpoint.sqlite import SqliteSaver
 import os
+from dotenv import load_dotenv
+
+# load_dotenv()
+
+# EXCHANGE_RATE_API_KEY = os.getenv("EXCHANGE_RATE_API_KEY")
+# STOCK_PRICE_API_KEY = os.getenv("STOCK_PRICE_API_KEY")
 
 
 class DecisionOutput(BaseModel):
@@ -40,6 +46,7 @@ memory_extractor_model = model.with_structured_output(MemoryDecision)
 db_path = os.path.join(constants.DB_FOLDER,constants.DB)
 memory_db_path = os.path.join(constants.DB_FOLDER,constants.LT_MEMORY_DB)
 os.makedirs(constants.DB_FOLDER, exist_ok=True)
+
 conn_1 = sqlite3.connect(database = db_path, check_same_thread=False, isolation_level=None)
 conn_1.execute("PRAGMA journal_mode=WAL;")
 checkpointer = SqliteSaver(conn=conn_1)
@@ -52,5 +59,11 @@ memory_store.setup()
 
 
 vector_db_path = os.path.join(constants.VECTOR_DB_FOLDER)
+
+search_type = constants.SEARCH_TYPE
+k = constants.SEARCH_KWARGS_K
+summarization_length = constants.SUMMARIZATION_LENGTH
+chunk_size = constants.CHUNK_SIZE
+chunk_overlap = constants.CHUNK_OVERLAP
 
 

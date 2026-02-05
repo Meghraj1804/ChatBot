@@ -1,0 +1,8 @@
+[ 2026-02-05 17:25:34,766 ] 132 faiss.loader - INFO - Loading faiss with AVX2 support.
+[ 2026-02-05 17:25:35,104 ] 134 faiss.loader - INFO - Successfully loaded faiss with AVX2 support.
+[ 2026-02-05 17:26:33,857 ] 1025 httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/chat "HTTP/1.1 200 OK"
+[ 2026-02-05 17:26:36,348 ] 86 root - ERROR - 'NoneType' object has no attribute 'invoke'
+[ 2026-02-05 17:28:11,918 ] 1025 httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/chat "HTTP/1.1 200 OK"
+[ 2026-02-05 17:28:14,563 ] 86 root - ERROR - 'NoneType' object has no attribute 'invoke'
+[ 2026-02-05 17:28:53,672 ] 1025 httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/chat "HTTP/1.1 200 OK"
+[ 2026-02-05 17:28:56,148 ] 86 root - ERROR - 'NoneType' object has no attribute 'invoke'

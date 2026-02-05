@@ -1,0 +1,24 @@
+[ 2026-02-05 17:35:50,894 ] 132 faiss.loader - INFO - Loading faiss with AVX2 support.
+[ 2026-02-05 17:35:51,220 ] 134 faiss.loader - INFO - Successfully loaded faiss with AVX2 support.
+[ 2026-02-05 17:37:38,907 ] 1025 httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/chat "HTTP/1.1 200 OK"
+[ 2026-02-05 17:37:41,448 ] 86 root - ERROR - 'NoneType' object has no attribute 'invoke'
+[ 2026-02-05 17:38:48,451 ] 1025 httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/chat "HTTP/1.1 200 OK"
+[ 2026-02-05 17:38:54,408 ] 86 root - ERROR - 'NoneType' object has no attribute 'invoke'
+[ 2026-02-05 17:39:40,593 ] 1025 httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/chat "HTTP/1.1 200 OK"
+[ 2026-02-05 17:39:43,109 ] 86 root - ERROR - 'NoneType' object has no attribute 'invoke'
+[ 2026-02-05 17:41:41,717 ] 1025 httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/chat "HTTP/1.1 200 OK"
+[ 2026-02-05 17:42:01,669 ] 1025 httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/chat "HTTP/1.1 200 OK"
+[ 2026-02-05 17:42:20,400 ] 1025 httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/chat "HTTP/1.1 200 OK"
+[ 2026-02-05 17:42:38,739 ] 86 root - ERROR - cannot access local variable 'full_response' where it is not associated with a value
+[ 2026-02-05 17:43:34,171 ] 1025 httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/chat "HTTP/1.1 200 OK"
+[ 2026-02-05 17:43:50,289 ] 1025 httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/chat "HTTP/1.1 200 OK"
+[ 2026-02-05 17:44:05,538 ] 1025 httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/chat "HTTP/1.1 200 OK"
+[ 2026-02-05 17:44:21,031 ] 86 root - ERROR - cannot access local variable 'full_response' where it is not associated with a value
+[ 2026-02-05 17:46:39,834 ] 1025 httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/chat "HTTP/1.1 200 OK"
+[ 2026-02-05 17:46:57,928 ] 1025 httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/chat "HTTP/1.1 200 OK"
+[ 2026-02-05 17:47:15,063 ] 1025 httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/chat "HTTP/1.1 200 OK"
+[ 2026-02-05 17:47:52,857 ] 1025 httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/chat "HTTP/1.1 200 OK"
+[ 2026-02-05 17:48:06,780 ] 1025 httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/chat "HTTP/1.1 200 OK"
+[ 2026-02-05 17:48:50,747 ] 1025 httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/chat "HTTP/1.1 200 OK"
+[ 2026-02-05 17:49:33,554 ] 1025 httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/chat "HTTP/1.1 200 OK"
+[ 2026-02-05 17:49:47,001 ] 1025 httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/chat "HTTP/1.1 200 OK"
